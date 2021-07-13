@@ -1,3 +1,31 @@
+# Dependency injection
+Dependency injection for Go programming language.
+
+Dependency injection is one form of the broader technique of inversion of control. It is used to increase modularity of the program and make it extensible.
+
+## Examples
+```go
+type A struct {
+	Name string
+}
+
+func NewA() *A {
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	name := "A-" + strconv.Itoa(r.Int())
+	return &A{Name: ls}
+}
+
+services := NewServiceCollection()
+services.AddSingleton(NewA)
+//serviceCollection.AddSingletonByImplementsAndName("redis-master", NewRedis, new(abstractions.IDataSource))
+//serviceCollection.AddTransientByImplements(NewRedisClient, new(redis.IClient))
+//serviceCollection.AddTransientByImplements(NewRedisHealthIndicator, new(health.Indicator))
+serviceProvider := services.Build()
+
+var env *A
+_ = serviceProvider.GetService(&env) // used
+```
+
 ## How will dependency injection help me?
 
 Dependency injection is one form of the broader technique of inversion
@@ -26,17 +54,8 @@ extensible.
 ## Installing
 
 ```shell
-go get -u github.com/defval/inject/v2
+go get -u github.com/yoyofxteam/dependencyinjection@v1.0.0
 ```
-
-This library follows [SemVer](http://semver.org/) strictly.
-
-## Tutorial
-
-Let's learn to use Inject by example. We will code a simple application
-that processes HTTP requests.
-
-The full tutorial code is available [here](./_tutorial/main.go)
 
 ### Providing
 
@@ -67,16 +86,20 @@ func NewServeMux() *http.ServeMux {
 Now let's teach a container to build these types.
 
 ```go
-container := inject.New(
+import (
+  di "github.com/yoyofxteam/dependencyinjection"
+)
+
+container := di.New(
 	// provide http server
-	inject.Provide(NewServer),
+    di.Provide(NewServer),
     // provide http serve mux
-	inject.Provide(NewServeMux)
+    di.Provide(NewServeMux)
 )
 ```
 
-The function `inject.New()` parse our constructors, compile dependency
-graph and return `*inject.Container` type for interaction. Container
+The function `di.New()` parse our constructors, compile dependency
+graph and return `*di.Container` type for interaction. Container
 panics if it could not compile.
 
 > I think that panic at the initialization of the application and not in
@@ -143,7 +166,7 @@ func NewServer(handler http.Handler) *http.Server {
 ```
 
 For a container to know that as an implementation of `http.Handler` is
-necessary to use, we use the option `inject.As()`. The arguments of this
+necessary to use, we use the option `di.As()`. The arguments of this
 option must be a pointer(s) to an interface like `new(Endpoint)`.
 
 > This syntax may seem strange, but I have not found a better way to
@@ -232,11 +255,11 @@ provide option.
 
 ```go
 container := inject.New(
-	inject.Provide(NewServer),        // provide http server
-	inject.Provide(NewServeMux),       // provide http serve mux
+	di.Provide(NewServer),        // provide http server
+	di.Provide(NewServeMux),       // provide http serve mux
 	// endpoints
-	inject.Provide(NewOrderController, inject.As(new(Controller))),  // provide order controller
-	inject.Provide(NewUserController, inject.As(new(Controller))),  // provide user controller
+	di.Provide(NewOrderController, di.As(new(Controller))),  // provide order controller
+	di.Provide(NewUserController, di.As(new(Controller))),  // provide user controller
 )
 ```
 
@@ -276,22 +299,22 @@ type SlaveDatabase struct {
 }
 ```
 
-Second way is a using named definitions with `inject.WithName()` provide
+Second way is a using named definitions with `di.WithName()` provide
 option:
 
 ```go
 // provide master database
-inject.Provide(NewMasterDatabase, inject.WithName("master"))
+di.Provide(NewMasterDatabase, di.WithName("master"))
 // provide slave database
-inject.Provide(NewSlaveDatabase, inject.WithName("slave"))
+di.Provide(NewSlaveDatabase, di.WithName("slave"))
 ```
 
-If you need to extract it from container use `inject.Name()` extract
+If you need to extract it from container use `di.Name()` extract
 option.
 
 ```go
 var db *Database
-container.Extract(&db, inject.Name("master"))
+container.Extract(&db, di.Name("master"))
 ```
 
 If you need to provide named definition in other constructor use
@@ -353,7 +376,7 @@ that transforms to `di.ParameterBag` type.
 
 ```go
 // Provide server with parameter bag
-inject.Provide(NewServer, inject.ParameterBag{
+di.Provide(NewServer, di.ParameterBag{
 	"addr": ":8080",
 })
 
@@ -369,10 +392,10 @@ func NewServer(pb di.ParameterBag) *http.Server {
 ### Prototypes
 
 If you want to create a new instance on each extraction use
-`inject.Prototype()` provide option.
+`di.Prototype()` provide option.
 
 ```go
-inject.Provide(NewRequestContext, inject.Prototype())
+di.Provide(NewRequestContext, di.Prototype())
 ```
 
 > todo: real use case
@@ -401,9 +424,9 @@ After `container.Cleanup()` call, it iterate over instances and call
 cleanup function if it exists.
 
 ```go
-container := inject.New(
+container := di.New(
 	// ...
-    inject.Provide(NewFile),
+    di.Provide(NewFile),
 )
 
 // do something
@@ -419,7 +442,7 @@ Dependency graph may be presented via
 representation:
 
 ```go
-var graph *di.Graph
+var graph *di.di.Graph
 if err = container.Extract(&graph); err != nil {
     // handle err
 }
