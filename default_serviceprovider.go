@@ -1,34 +1,31 @@
 package dependencyinjection
 
 import (
-	"github.com/goava/di"
-	"unsafe"
+	"github.com/yoyofxteam/dependencyinjection/di"
 )
 
 type DefaultServiceProvider struct {
-	container *di.Container
+	container *Container
 }
 
 func (d DefaultServiceProvider) GetService(refObject interface{}) (err error) {
-	err = d.container.Resolve(refObject)
+	err = d.container.Extract(refObject)
 	return err
 }
 
 func (d DefaultServiceProvider) GetServiceByName(refObject interface{}, name string) (err error) {
-	err = d.container.Resolve(refObject, di.Name(name))
-	return err
-}
+	err = d.container.Extract(refObject, Name(name))
 
-func (d DefaultServiceProvider) GetServiceByTags(refObject interface{}, tags map[string]string) (err error) {
-	p := unsafe.Pointer(&tags)
-	var tag di.Tags
-	tag = *(*di.Tags)(p)
-	err = d.container.Resolve(refObject, tag)
 	return err
 }
 
 func (d DefaultServiceProvider) GetGraph() string {
-	return ""
+	var graph *di.Graph
+	if err := d.container.Extract(&graph); err != nil {
+		// handle err
+	}
+
+	return graph.String() // use string representation
 }
 
 func (d DefaultServiceProvider) InvokeService(fn interface{}) error {
