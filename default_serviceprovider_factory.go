@@ -13,7 +13,7 @@ func (sc ServiceCollection) Build() IServiceProvider {
 		}
 		//prototype is create a new instance on each call.
 		if desc.Lifetime != Singleton {
-			//providerOptions = append(providerOptions)
+			providerOptions = append(providerOptions, Prototype())
 		}
 
 		provider := Provide(desc.Provider, providerOptions...)
